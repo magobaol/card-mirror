@@ -9,7 +9,10 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Question\ConfirmationQuestion;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
+use Symfony\Component\Filesystem\Filesystem;
 
 #[AsCommand(
     name: 'app:mirror',
@@ -17,10 +20,22 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 class MirrorCommand extends Command
 {
+    /**
+     * @var ParameterBagInterface
+     */
+    private ParameterBagInterface $parameterBag;
+
+    public function __construct(ParameterBagInterface $parameterBag)
+    {
+        parent::__construct();
+        $this->parameterBag = $parameterBag;
+    }
+
     protected function configure(): void
     {
         $this
             ->addArgument('card-name', InputArgument::REQUIRED, 'The name of the card you want to mirror')
+            ->addOption('base-dir', InputOption::VALUE_REQUIRED)
         ;
     }
 
@@ -45,6 +60,41 @@ class MirrorCommand extends Command
             $io->error(sprintf('The card name is not in valid format. It should be named something like %s', CardName::getSample()));
             return Command::INVALID;
         }
+
+        if ($input->getOption('base-dir')) {
+            $mirrorBaseDir = $input->getOption('base-dir');
+        } else {
+            $mirrorBaseDir = $this->parameterBag->get('app.mirror_base_dir');
+        }
+
+        $fs = new Filesystem();
+
+        $questionHelper = $this->getHelper('question');
+
+        if (!$fs->exists($mirrorBaseDir)) {
+            $question = new ConfirmationQuestion(sprintf('The base dir %s does not exist. Should I create it? (y/n) ', $mirrorBaseDir), true);
+            if ($questionHelper->ask($input, $output, $question)) {
+                $fs->mkdir($mirrorBaseDir);
+                $io->writeln('Base dir created');
+            } else {
+                $io->error("Then there's nothing I can do here. Bye");
+                return Command::FAILURE;
+            }
+        }
+
+        $cardDir = $mirrorBaseDir.'/'.$cardName;
+        if (!$fs->exists($cardDir)) {
+            $question = new ConfirmationQuestion(sprintf("The card dir %s does not exist, it's likely that you never mirrored this card before. Should I create the dir and continue? (y/n) ", $cardDir), true);
+            if ($questionHelper->ask($input, $output, $question)) {
+                $fs->mkdir($cardDir);
+                $io->writeln('Card dir created');
+            } else {
+                $io->error("Then there's nothing I can do here. Bye");
+                return Command::FAILURE;
+            }
+        }
+
+        $io->writeln($mirrorBaseDir);
 
         $io->success('You have a new command! Now make it your own! Pass --help to see your options.');
 
