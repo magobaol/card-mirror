@@ -135,7 +135,7 @@ class MirrorCommand extends Command
 
         $io->writeln('Ok, hold on, this may take a while...');
 
-        $process = Process::fromShellCommandline(GoodSyncCommandFactory::makeAnalyzeCommand($sourceDir, $targetDir));
+        $process = Process::fromShellCommandline(GoodSyncCommandFactory::makeAnalyzeCommand($sourceDir, $targetDir, $cardName));
         $this->executeGoodSyncProcess($process, $io);
         $operationLogger->logAnalyze();
 
@@ -148,7 +148,7 @@ class MirrorCommand extends Command
         }
 
         $io->writeln('Ok, hold on, this may take a little longer...');
-        $process = Process::fromShellCommandline(GoodSyncCommandFactory::makeSyncCommand($sourceDir, $targetDir));
+        $process = Process::fromShellCommandline(GoodSyncCommandFactory::makeSyncCommand($sourceDir, $targetDir, $cardName));
         $this->executeGoodSyncProcess($process, $io);
         $operationLogger->logSync();
 
