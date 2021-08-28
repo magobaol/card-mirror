@@ -52,6 +52,7 @@ class MirrorCommand extends Command
 
     private function executeGoodSyncProcess(Process $process, SymfonyStyle $io)
     {
+        $process->setTimeout(3600);
         $process->run();
 
         // executes after the command finishes
