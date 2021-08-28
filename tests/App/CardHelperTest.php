@@ -1,19 +1,26 @@
 <?php
 
-namespace Tests\Model;
+namespace Tests\App;
 
-use Model\CardName;
+use App\CardHelper;
 use PHPUnit\Framework\TestCase;
 
-class CardNameTest extends TestCase
+class CardHelperTest extends TestCase
 {
+    private CardHelper $cardHelper;
+
+    public function setUp(): void
+    {
+        $this->cardHelper = new CardHelper();
+    }
+
     /**
      * @test
      * @dataProvider isValid_data
      */
     public function test_isValid($name, $expectedIsValid)
     {
-        $result = CardName::isValid($name);
+        $result = $this->cardHelper->isValidCardName($name);
         $this->assertEquals($expectedIsValid, $result);
     }
 
@@ -31,6 +38,8 @@ class CardNameTest extends TestCase
 
     public function test_getSample_should_return_a_valid_name()
     {
-        $this->assertTrue(CardName::isValid(CardName::getSample()), 'The card name sample is invalid. Did you change something and forgot to update it?');
+        $this->assertTrue($this->cardHelper->isValidCardName($this->cardHelper->getSampleCardName()), 'The card name sample is invalid. Did you change something and forgot to update it?');
     }
+
+
 }
