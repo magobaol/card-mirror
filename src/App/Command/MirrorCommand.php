@@ -60,28 +60,18 @@ class MirrorCommand extends Command
         }
 
         $io->writeln('');
-        $io->writeln("========= GoodSync Analyze Process Output Start ========= ");
+        $io->writeln("========= GoodSync Process Output Start ========= ");
         $io->writeln('');
         $io->write($process->getOutput());
-        $io->writeln("========= GoodSync Analyze Process Output End ========= ");
+        $io->writeln("========= GoodSync Process Output End ========= ");
         $io->writeln('');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        /*
-         * 1. Check if the volume (card) name passed in input is right-ish (0001, maybe with a prefix)
-         * 2. Check if a target card dir already exists. If not, create it.
-         * 3. Create the GoodSync Command to launch
-         *      - When using a temp job, how the .gsdata folders are handled? It shouldn't be a problem
-         * 4. Launch the GoodSync Command to Analyze and save the result in a log file with the target folder with timestamp as name
-         * 5. Write the analyze operation in a main log file in the target folder
-         * 6. Launch the GoodSync command to execute the sync
-         *      - How to display the output in real time?
-         * 7. Write the sync operation in a main log file in the target folder
-         */
-
         $io = new SymfonyStyle($input, $output);
+        $questionHelper = $this->getHelper('question');
+
         $cardName = $input->getArgument('card-name');
 
         if (!$this->cardHelper->isValidCardName($cardName)) {
@@ -91,6 +81,7 @@ class MirrorCommand extends Command
 
         $sourceDir = $this->cardHelper->getSourceDirFromCardName($cardName);
 
+        //***** Check if the source dir exists (that is, the card is inserted) *****
         if (!$this->fs->exists($sourceDir)) {
             $io->error(sprintf("The source dir %s does not exists, so probably the card is not inserted", $sourceDir));
             return Command::FAILURE;
@@ -102,8 +93,7 @@ class MirrorCommand extends Command
             $mirrorBaseDir = $this->parameterBag->get('app.mirror_base_dir');
         }
 
-        $questionHelper = $this->getHelper('question');
-
+        //***** Check if the mirror base dir exists and offer to create *****
         if (!$this->fs->exists($mirrorBaseDir)) {
             $question = new ConfirmationQuestion(sprintf('The base dir %s does not exist. Should I create it? (Y/n) ', $mirrorBaseDir), true);
             if ($questionHelper->ask($input, $output, $question)) {
@@ -117,6 +107,7 @@ class MirrorCommand extends Command
 
         $targetDir = $this->cardHelper->getTargetDirFromBaseDirAndCardName($mirrorBaseDir, $cardName);
 
+        //***** Check if the final target dir exists and offer to create *****
         if (!$this->fs->exists($targetDir)) {
             $question = new ConfirmationQuestion(sprintf("The card dir %s does not exist, it's likely that you never mirrored this card before. Should I create the dir and continue? (Y/n) ", $targetDir), true);
             if ($questionHelper->ask($input, $output, $question)) {
@@ -128,6 +119,7 @@ class MirrorCommand extends Command
             }
         }
 
+        //***** GoodSync Analyze *****
         $io->writeln("I'm about to launch the GoodSync analyze process with the following parameters");
         $io->writeln(sprintf('Source dir: %s', $sourceDir));
         $io->writeln(sprintf('Target dir: %s', $targetDir));
@@ -146,6 +138,7 @@ class MirrorCommand extends Command
         $this->executeGoodSyncProcess($process, $io);
         $operationLogger->logAnalyze();
 
+        //***** GoodSync Sync *****
         $io->warning('This is your last chance to end the process!');
         $question = new ConfirmationQuestion("Should I continue with the actual sync? (Y/n) ", true);
         if (!$questionHelper->ask($input, $output, $question)) {
