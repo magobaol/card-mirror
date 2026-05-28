@@ -4,9 +4,6 @@ namespace App\Command;
 
 use App\CardHelper;
 use App\GoodSyncCommandFactory;
-use Model\CardName;
-use Model\CardSourceDir;
-use Model\CardTargetDir;
 use Model\OperationLogger;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
